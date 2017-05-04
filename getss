@@ -1,0 +1,118 @@
+import json
+import re
+import urllib.request
+import base64
+import plistlib
+import socks
+import socket
+import uuid
+
+# 设置代理
+def setup_proxy():
+    # http代理
+    # proxy_support = urllib.request.ProxyHandler({'https':'127.0.0.1:8087'}) # ss:1087  xx-net:8087
+    # opener = urllib.request.build_opener(proxy_support)
+    # urllib.request.install_opener(opener)
+
+    # #socks5代理
+    socks.set_default_proxy(socks.SOCKS5, "127.0.0.1", 1086)
+    socket.socket = socks.socksocket
+
+
+# 访问 网站
+def look_page(url):
+    setup_proxy()
+    try:
+        response = urllib.request.urlopen(url, timeout=5)
+        html = response.read().decode('utf-8')
+        # print(html)
+        return html
+    except:
+        print("error, visit fail")
+        return
+    else:
+        print('访问成功!')
+
+
+def decode_base64(data):
+    """Decode base64, padding being optional.
+    :param data: Base64 data as an ASCII byte string
+    :returns: The decoded byte string.
+    """
+    # b64_string = data
+    # b64_string += "=" * ((4 - len(b64_string) % 4) % 4)
+    missing_padding = (4 - len(data) % 4) % 4
+    if missing_padding:
+        data += "=" * missing_padding
+    return base64.b64decode(data).decode()
+
+
+def find_ss_link(html):
+    p = re.compile(r'''text=ss://([^"]*)?''', re.VERBOSE)
+    base64_links = p.findall(html)
+    decode_links = []
+    for each_link in base64_links:
+        # print(each_link)
+        # print(decode_base64(each_link))
+        try:
+            res = decode_base64(each_link)
+            decode_links.append(res)
+        except ValueError:
+            continue
+    return decode_links
+
+
+def read_ss_plist():
+    with open("/Users/cjc/Library/Preferences/com.qiuyuzhou.ShadowsocksX-NG.plist", 'rb') as fp:
+        pl = plistlib.load(fp)
+    print(pl["ServerProfiles"])
+
+
+def write_ss_plist(links):
+
+    profiles = []
+    updating_dicts = dict()
+
+    for each_link in links:
+        p = re.compile(r'''([^:]*)?:([^@]*)?@([^:]*)?:(.*)?''', re.VERBOSE)
+        components = p.findall(each_link)
+        try:
+            profile = dict(Id=str(uuid.uuid1()),
+                           Method=components[0][0],
+                           Password=components[0][1],
+                           ServerHost=components[0][2],
+                           ServerPort=int(components[0][3])
+                           )
+            profiles.append(profile)
+        except ValueError:
+            continue
+
+    with open("/Users/cjc/Library/Preferences/com.qiuyuzhou.ShadowsocksX-NG.plist", 'rb') as fp:
+        pl = plistlib.load(fp)
+        updating_dicts.update(pl)
+        updating_dicts['ServerProfiles'] = profiles
+        updating_dicts['ActiveServerProfileId'] = profiles[0]['Id']
+        # updating_dicts.pop('ActiveServerProfileId')
+
+    with open("/Users/cjc/Library/Preferences/com.qiuyuzhou.ShadowsocksX-NG.plist", 'wb') as fp:
+        plistlib.dump(updating_dicts, fp)
+
+
+def test_write_ss_plist():
+    dicts = dict()
+    with open("/Users/cjc/Desktop/com.qiuyuzhou.ShadowsocksX-NG.plist", 'rb') as fp:
+        pl = plistlib.load(fp)
+        dicts.update(pl)
+        dicts['LaunchAtLogin']=True
+    with open("/Users/cjc/Desktop/com.qiuyuzhou.ShadowsocksX-NG.plist", 'wb') as fp:
+        plistlib.dump(dicts, fp)
+
+
+if __name__ == '__main__':
+    # test_write_ss_plist()
+
+    html = look_page("https://doub.io/sszhfx/")
+    links = find_ss_link(html)
+    print(links)
+    # read_ss_plist()
+    write_ss_plist(links)
