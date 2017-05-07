@@ -1,3 +1,6 @@
+#!/usr/local/bin/python3
+#coding:utf-8
+
 import json
 import re
 import urllib.request
@@ -7,16 +10,17 @@ import socks
 import socket
 import uuid
 
+
 # 设置代理
 def setup_proxy():
     # http代理
-    # proxy_support = urllib.request.ProxyHandler({'https':'127.0.0.1:8087'}) # ss:1087  xx-net:8087
-    # opener = urllib.request.build_opener(proxy_support)
-    # urllib.request.install_opener(opener)
+    proxy_support = urllib.request.ProxyHandler({'https':'127.0.0.1:1087'}) # ss:1087  xx-net:8087
+    opener = urllib.request.build_opener(proxy_support)
+    urllib.request.install_opener(opener)
 
-    #socks5代理
-    socks.set_default_proxy(socks.SOCKS5, "127.0.0.1", 1086)
-    socket.socket = socks.socksocket
+    # # socks5代理
+    # socks.set_default_proxy(socks.PROXY_TYPE_SOCKS5, "127.0.0.1", 1086)
+    # socket.socket = socks.socksocket
 
 
 # 访问 网站
@@ -116,3 +120,4 @@ if __name__ == '__main__':
     print(links)
     # read_ss_plist()
     write_ss_plist(links)
+    print("exit success!")
